@@ -1,25 +1,9 @@
-# Core dependencies
-requests>=2.28.0
+# Core dependencies - minimal for basic functionality
+requests>=2.25.0
 python-nmap>=0.7.1
-impacket>=0.10.0
-scapy>=2.4.5
 
-# Network and protocol libraries
-netaddr>=0.8.0
-dnspython>=2.2.0
-pysmb>=1.2.7
-
-# Reporting dependencies
-jinja2>=3.1.0
-markdown>=3.4.0
-weasyprint>=57.0
-
-# Utility libraries
-colorama>=0.4.5
-tqdm>=4.64.0
-pyyaml>=6.0
-
-# Optional dependencies for advanced features
-# python-ldap>=3.4.0  # For LDAP enumeration (requires system libraries)
-# pycryptodome>=3.15.0  # For encryption/decryption
-# paramiko>=2.11.0  # For SSH operations
+# Optional dependencies (install if available)
+# impacket>=0.10.0
+# scapy>=2.4.5
+# netaddr>=0.8.0
+# dnspython>=2.2.0

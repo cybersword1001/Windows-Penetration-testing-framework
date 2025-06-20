@@ -7,6 +7,8 @@ import socket
 import threading
 import subprocess
 import json
+import platform
+import ipaddress
 from concurrent.futures import ThreadPoolExecutor
 from utils.logger import get_logger
 
@@ -26,29 +28,41 @@ class NetworkScanner:
             'ldap_enumeration': {}
         }
         
-        # Host discovery
-        hosts = self._discover_hosts(target)
-        results['host_discovery'] = hosts
-        
-        # Port scanning for each discovered host
-        for host in hosts:
-            self.logger.info(f"Scanning ports on {host}")
-            open_ports = self._port_scan(host)
-            results['port_scan'][host] = open_ports
+        try:
+            # Host discovery
+            self.logger.info("Starting host discovery...")
+            hosts = self._discover_hosts(target)
+            results['host_discovery'] = hosts
             
-            # Service enumeration
-            services = self._enumerate_services(host, open_ports)
-            results['service_enumeration'][host] = services
+            if not hosts:
+                self.logger.warning("No live hosts discovered")
+                return results
             
-            # SMB enumeration if port 445 is open
-            if 445 in open_ports:
-                smb_info = self._enumerate_smb(host)
-                results['smb_enumeration'][host] = smb_info
+            # Port scanning for each discovered host
+            for host in hosts:
+                self.logger.info(f"Scanning ports on {host}")
+                open_ports = self._port_scan(host)
+                results['port_scan'][host] = open_ports
+                
+                if open_ports:
+                    # Service enumeration
+                    services = self._enumerate_services(host, open_ports)
+                    results['service_enumeration'][host] = services
+                    
+                    # SMB enumeration if port 445 is open
+                    if 445 in open_ports:
+                        smb_info = self._enumerate_smb(host)
+                        results['smb_enumeration'][host] = smb_info
+                    
+                    # LDAP enumeration if port 389 is open
+                    if 389 in open_ports:
+                        ldap_info = self._enumerate_ldap(host)
+                        results['ldap_enumeration'][host] = ldap_info
+                else:
+                    self.logger.info(f"No open ports found on {host}")
             
-            # LDAP enumeration if port 389 is open
-            if 389 in open_ports:
-                ldap_info = self._enumerate_ldap(host)
-                results['ldap_enumeration'][host] = ldap_info
+        except Exception as e:
+            self.logger.error(f"Error during scanning: {str(e)}")
         
         return results
     
@@ -56,37 +70,71 @@ class NetworkScanner:
         """Discover live hosts in the target range"""
         hosts = []
         
-        if '/' in target:  # CIDR notation
-            # Simple ping sweep implementation
-            import ipaddress
-            network = ipaddress.IPv4Network(target, strict=False)
+        try:
+            if '/' in target:  # CIDR notation
+                self.logger.info(f"Discovering hosts in network: {target}")
+                network = ipaddress.IPv4Network(target, strict=False)
+                
+                def ping_host(ip):
+                    try:
+                        # Determine ping parameters based on OS
+                        if platform.system().lower() == 'windows':
+                            cmd = ['ping', '-n', '1', '-w', '1000', str(ip)]
+                        else:
+                            cmd = ['ping', '-c', '1', '-W', '1', str(ip)]
+                        
+                        result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                        if result.returncode == 0:
+                            return str(ip)
+                    except Exception:
+                        pass
+                    return None
+                
+                # Limit the number of hosts to scan (prevent overwhelming)
+                host_list = list(network.hosts())
+                if len(host_list) > 254:
+                    self.logger.warning(f"Large network detected ({len(host_list)} hosts). Limiting to first 254 hosts.")
+                    host_list = host_list[:254]
+                
+                with ThreadPoolExecutor(max_workers=50) as executor:
+                    futures = [executor.submit(ping_host, ip) for ip in host_list]
+                    for future in futures:
+                        try:
+                            result = future.result(timeout=10)
+                            if result:
+                                hosts.append(result)
+                        except Exception:
+                            continue
+            else:
+                # Single host
+                self.logger.info(f"Testing single host: {target}")
+                if self._ping_single_host(target):
+                    hosts = [target]
+                else:
+                    self.logger.warning(f"Host {target} appears to be down or not responding to ping")
+                    # Still add it to scan in case ping is blocked
+                    hosts = [target]
             
-            def ping_host(ip):
-                try:
-                    import platform
-                    param = '-n' if platform.system().lower() == 'windows' else '-c'
-                    timeout_param = '-w' if platform.system().lower() == 'windows' else '-W'
-                    
-                    result = subprocess.run(['ping', param, '1', timeout_param, '1000', str(ip)], 
-                                          capture_output=True, text=True, timeout=5)
-                    if result.returncode == 0:
-                        return str(ip)
-                except:
-                    pass
-                return None
-            
-            with ThreadPoolExecutor(max_workers=50) as executor:
-                futures = [executor.submit(ping_host, ip) for ip in network.hosts()]
-                for future in futures:
-                    result = future.result()
-                    if result:
-                        hosts.append(result)
-        else:
-            # Single host
-            hosts = [target]
+        except Exception as e:
+            self.logger.error(f"Error in host discovery: {str(e)}")
+            # Fallback to single host
+            hosts = [target.split('/')[0]]
         
         self.logger.info(f"Discovered {len(hosts)} live hosts")
         return hosts
+    
+    def _ping_single_host(self, host):
+        """Ping a single host"""
+        try:
+            if platform.system().lower() == 'windows':
+                cmd = ['ping', '-n', '1', '-w', '1000', host]
+            else:
+                cmd = ['ping', '-c', '1', '-W', '1', host]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            return result.returncode == 0
+        except Exception:
+            return False
     
     def _port_scan(self, host):
         """Scan common ports on a host"""
@@ -95,21 +143,27 @@ class NetworkScanner:
         def scan_port(port):
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(1)
+                sock.settimeout(2)
                 result = sock.connect_ex((host, port))
+                sock.close()
                 if result == 0:
                     return port
-                sock.close()
-            except:
+            except Exception:
                 pass
             return None
         
-        with ThreadPoolExecutor(max_workers=100) as executor:
-            futures = [executor.submit(scan_port, port) for port in self.common_ports]
-            for future in futures:
-                result = future.result()
-                if result:
-                    open_ports.append(result)
+        try:
+            with ThreadPoolExecutor(max_workers=50) as executor:
+                futures = [executor.submit(scan_port, port) for port in self.common_ports]
+                for future in futures:
+                    try:
+                        result = future.result(timeout=5)
+                        if result:
+                            open_ports.append(result)
+                    except Exception:
+                        continue
+        except Exception as e:
+            self.logger.error(f"Error during port scanning: {str(e)}")
         
         self.logger.info(f"Found {len(open_ports)} open ports on {host}")
         return sorted(open_ports)
@@ -127,17 +181,25 @@ class NetworkScanner:
                 # Try to grab banner
                 banner = ""
                 try:
-                    sock.send(b"HEAD / HTTP/1.0\r\n\r\n")
+                    if port in [80, 443, 8080]:
+                        sock.send(b"HEAD / HTTP/1.0\r\n\r\n")
+                    elif port == 21:
+                        pass  # FTP sends banner automatically
+                    elif port == 22:
+                        pass  # SSH sends banner automatically
+                    elif port == 25:
+                        sock.send(b"EHLO test\r\n")
+                    
                     banner = sock.recv(1024).decode('utf-8', errors='ignore')
-                except:
+                except Exception:
                     pass
                 
                 services[port] = {
                     'service': self._identify_service(port),
-                    'banner': banner.strip()
+                    'banner': banner.strip()[:200]  # Limit banner length
                 }
                 sock.close()
-            except:
+            except Exception:
                 services[port] = {
                     'service': self._identify_service(port),
                     'banner': ''
@@ -165,25 +227,30 @@ class NetworkScanner:
         }
         
         try:
-            import platform
             if platform.system().lower() == 'windows':
                 # Windows net command
                 result = subprocess.run(['net', 'view', f'\\\\{host}'], 
-                                  capture_output=True, text=True, timeout=10)
+                                      capture_output=True, text=True, timeout=10)
             else:
-                # Linux smbclient command (if available)
-                result = subprocess.run(['smbclient', '-L', host, '-N'], 
-                                  capture_output=True, text=True, timeout=10)
-        
-        if result.returncode == 0:
-            # Parse shares from output
-            lines = result.stdout.split('\n')
-            for line in lines:
-                if 'Disk' in line or 'Print' in line:
-                    share_name = line.split()[0]
-                    smb_info['shares'].append(share_name)
-        except:
-            pass
+                # Try smbclient if available
+                try:
+                    result = subprocess.run(['smbclient', '-L', host, '-N'], 
+                                          capture_output=True, text=True, timeout=10)
+                except FileNotFoundError:
+                    self.logger.warning("smbclient not found. Install with: sudo apt install samba-client")
+                    return smb_info
+            
+            if result.returncode == 0:
+                # Parse shares from output
+                lines = result.stdout.split('\n')
+                for line in lines:
+                    if 'Disk' in line or 'Print' in line:
+                        parts = line.split()
+                        if parts:
+                            share_name = parts[0]
+                            smb_info['shares'].append(share_name)
+        except Exception as e:
+            self.logger.debug(f"SMB enumeration failed: {str(e)}")
         
         return smb_info
     
@@ -195,7 +262,8 @@ class NetworkScanner:
             'domain_info': ''
         }
         
-        # LDAP enumeration would be implemented here
-        # This is a placeholder for actual LDAP queries
+        # Basic LDAP enumeration - placeholder for now
+        # In a real implementation, you'd use python-ldap or ldap3
+        self.logger.debug(f"LDAP enumeration for {host} - not implemented yet")
         
         return ldap_info

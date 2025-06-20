@@ -13,51 +13,10 @@ def check_python_version():
     """Check if Python version is compatible"""
     if sys.version_info < (3, 7):
         print("❌ Python 3.7 or higher is required")
-        sys.exit(1)
+        print(f"Current version: {sys.version}")
+        return False
     print(f"✅ Python {sys.version.split()[0]} detected")
-
-def install_requirements():
-    """Install Python requirements"""
-    print("📦 Installing Python dependencies...")
-    try:
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
-        print("✅ Python dependencies installed successfully")
-    except subprocess.CalledProcessError:
-        print("❌ Failed to install Python dependencies")
-        sys.exit(1)
-
-def check_system_tools():
-    """Check for required system tools"""
-    tools = {
-        'nmap': 'Network scanning',
-        'ping': 'Host discovery'
-    }
-    
-    if platform.system().lower() != 'windows':
-        tools['smbclient'] = 'SMB enumeration'
-    
-    print("🔍 Checking system tools...")
-    missing_tools = []
-    
-    for tool, description in tools.items():
-        try:
-            subprocess.run([tool, '--version'], capture_output=True, timeout=5)
-            print(f"✅ {tool} - {description}")
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            print(f"❌ {tool} - {description} (MISSING)")
-            missing_tools.append(tool)
-    
-    if missing_tools:
-        print(f"\n⚠️  Missing tools: {', '.join(missing_tools)}")
-        print("Please install missing tools using your system package manager:")
-        
-        if platform.system().lower() == 'linux':
-            print("Ubuntu/Debian: sudo apt-get install nmap samba-client")
-            print("CentOS/RHEL: sudo yum install nmap samba-client")
-        elif platform.system().lower() == 'darwin':
-            print("macOS: brew install nmap samba")
-        elif platform.system().lower() == 'windows':
-            print("Windows: Download nmap from https://nmap.org/download.html")
+    return True
 
 def create_directories():
     """Create necessary directories"""
@@ -68,15 +27,105 @@ def create_directories():
         Path(directory).mkdir(exist_ok=True)
         print(f"✅ Created {directory}/ directory")
 
+def create_default_config():
+    """Create default configuration file if it doesn't exist"""
+    config_file = Path('config/default.json')
+    if not config_file.exists():
+        print("📝 Creating default configuration...")
+        default_config = {
+            "scanning": {
+                "timeout": 5,
+                "threads": 50,
+                "common_ports": [21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 445, 993, 995, 1723, 3306, 3389, 5432, 5900, 8080],
+                "ping_timeout": 1000,
+                "service_detection": True
+            },
+            "exploitation": {
+                "enabled": False,
+                "safe_mode": True,
+                "max_attempts": 3,
+                "delay_between_attempts": 1
+            },
+            "post_exploitation": {
+                "enabled": False,
+                "privilege_escalation": True,
+                "credential_dumping": False,
+                "lateral_movement": False,
+                "persistence": False
+            },
+            "reporting": {
+                "formats": ["html", "json", "markdown"],
+                "include_screenshots": False,
+                "output_directory": "reports",
+                "detailed_logs": True
+            },
+            "legal": {
+                "disclaimer": "This tool is for authorized penetration testing only. Unauthorized use is illegal.",
+                "require_authorization": True
+            }
+        }
+        
+        import json
+        with open(config_file, 'w') as f:
+            json.dump(default_config, f, indent=2)
+        print("✅ Default configuration created")
+
+def install_basic_requirements():
+    """Install basic Python requirements"""
+    print("📦 Installing basic Python dependencies...")
+    
+    basic_packages = [
+        'requests',
+    ]
+    
+    for package in basic_packages:
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
+            print(f"✅ Installed {package}")
+        except subprocess.CalledProcessError:
+            print(f"⚠️  Failed to install {package} (optional)")
+
+def check_system_tools():
+    """Check for system tools"""
+    print("🔍 Checking system tools...")
+    
+    tools = ['ping']
+    optional_tools = ['nmap', 'smbclient']
+    
+    for tool in tools:
+        try:
+            subprocess.run([tool, '--version'], capture_output=True, timeout=5)
+            print(f"✅ {tool} available")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            print(f"❌ {tool} not found")
+    
+    for tool in optional_tools:
+        try:
+            subprocess.run([tool, '--version'], capture_output=True, timeout=5)
+            print(f"✅ {tool} available (optional)")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            print(f"⚠️  {tool} not found (optional)")
+
+def make_executable():
+    """Make main.py executable"""
+    if platform.system() != 'windows':
+        try:
+            os.chmod('main.py', 0o755)
+            print("✅ Made main.py executable")
+        except Exception as e:
+            print(f"⚠️  Could not make main.py executable: {e}")
+
 def display_usage():
     """Display usage information"""
     print("""
 🎯 Windows Penetration Testing Tool Setup Complete!
 
+📋 Quick Test:
+   python3 test_installation.py
+
 📋 Usage Examples:
-   Basic scan:     python main.py -t 192.168.1.100 --scan-only
-   Full test:      python main.py -t 192.168.1.0/24 --exploit --post-exploit -v
-   Custom config:  python main.py -t 192.168.1.100 -c config/custom.json
+   Basic scan:     python3 main.py -t 192.168.1.100 --scan-only -v
+   Full test:      python3 main.py -t 192.168.1.0/24 --exploit --post-exploit -v
 
 ⚠️  Legal Notice:
    This tool is for AUTHORIZED testing only!
@@ -91,13 +140,17 @@ def main():
     print("🔧 Setting up Windows Penetration Testing Tool...")
     print("=" * 60)
     
-    check_python_version()
+    if not check_python_version():
+        sys.exit(1)
+    
     create_directories()
-    install_requirements()
+    create_default_config()
+    install_basic_requirements()
     check_system_tools()
+    make_executable()
     
     print("=" * 60)
-    print("✅ Setup completed successfully!")
+    print("✅ Setup completed!")
     display_usage()
 
 if __name__ == "__main__":
