@@ -11,6 +11,74 @@ A comprehensive, modular penetration testing framework designed specifically for
 - **Comprehensive Reporting**: HTML, JSON, and Markdown reports
 - **Modular Architecture**: Easy to extend and customize
 
+## Platform Compatibility
+
+### 🎯 **Target Systems**
+This tool is designed to test **Windows environments** including:
+- Windows Server (2008, 2012, 2016, 2019, 2022)
+- Windows Desktop (7, 8, 10, 11)
+- Active Directory environments
+- Windows network services (SMB, RDP, LDAP, etc.)
+
+### 💻 **Host Platform (Where the tool runs)**
+The tool can run on multiple platforms:
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Linux** | ✅ Recommended | Best compatibility with security tools |
+| **Windows** | ✅ Supported | Some features may require additional setup |
+| **macOS** | ⚠️ Limited | Basic functionality, some tools may be missing |
+
+### 📦 **Installation by Platform**
+
+#### Linux (Ubuntu/Debian)
+\`\`\`bash
+# Install system dependencies
+sudo apt-get update
+sudo apt-get install python3 python3-pip nmap samba-client
+
+# Clone and setup
+git clone <repository-url>
+cd windows-pentest-tool
+python3 setup.py
+\`\`\`
+
+#### Linux (CentOS/RHEL)
+\`\`\`bash
+# Install system dependencies
+sudo yum install python3 python3-pip nmap samba-client
+
+# Clone and setup
+git clone <repository-url>
+cd windows-pentest-tool
+python3 setup.py
+\`\`\`
+
+#### Windows
+\`\`\`powershell
+# Install Python from python.org
+# Download and install Nmap from https://nmap.org/download.html
+
+# Clone and setup
+git clone <repository-url>
+cd windows-pentest-tool
+python setup.py
+\`\`\`
+
+#### macOS
+\`\`\`bash
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install python3 nmap samba
+
+# Clone and setup
+git clone <repository-url>
+cd windows-pentest-tool
+python3 setup.py
+\`\`\`
+
 ## Installation
 
 1. Clone or download this repository

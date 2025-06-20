@@ -63,7 +63,11 @@ class NetworkScanner:
             
             def ping_host(ip):
                 try:
-                    result = subprocess.run(['ping', '-n', '1', '-w', '1000', str(ip)], 
+                    import platform
+                    param = '-n' if platform.system().lower() == 'windows' else '-c'
+                    timeout_param = '-w' if platform.system().lower() == 'windows' else '-W'
+                    
+                    result = subprocess.run(['ping', param, '1', timeout_param, '1000', str(ip)], 
                                           capture_output=True, text=True, timeout=5)
                     if result.returncode == 0:
                         return str(ip)
@@ -161,17 +165,23 @@ class NetworkScanner:
         }
         
         try:
-            # Use smbclient equivalent or custom SMB enumeration
-            # This is a simplified version - in practice, you'd use libraries like impacket
-            result = subprocess.run(['net', 'view', f'\\\\{host}'], 
+            import platform
+            if platform.system().lower() == 'windows':
+                # Windows net command
+                result = subprocess.run(['net', 'view', f'\\\\{host}'], 
                                   capture_output=True, text=True, timeout=10)
-            if result.returncode == 0:
-                # Parse shares from output
-                lines = result.stdout.split('\n')
-                for line in lines:
-                    if 'Disk' in line or 'Print' in line:
-                        share_name = line.split()[0]
-                        smb_info['shares'].append(share_name)
+            else:
+                # Linux smbclient command (if available)
+                result = subprocess.run(['smbclient', '-L', host, '-N'], 
+                                  capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            # Parse shares from output
+            lines = result.stdout.split('\n')
+            for line in lines:
+                if 'Disk' in line or 'Print' in line:
+                    share_name = line.split()[0]
+                    smb_info['shares'].append(share_name)
         except:
             pass
         
