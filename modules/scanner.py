@@ -1,0 +1,191 @@
+"""
+Network Scanner Module
+Handles reconnaissance and service enumeration
+"""
+
+import socket
+import threading
+import subprocess
+import json
+from concurrent.futures import ThreadPoolExecutor
+from utils.logger import get_logger
+
+class NetworkScanner:
+    def __init__(self, config):
+        self.config = config
+        self.logger = get_logger(__name__)
+        self.common_ports = [21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443, 445, 993, 995, 1723, 3306, 3389, 5432, 5900, 8080]
+        
+    def scan_target(self, target):
+        """Main scanning function"""
+        results = {
+            'host_discovery': [],
+            'port_scan': {},
+            'service_enumeration': {},
+            'smb_enumeration': {},
+            'ldap_enumeration': {}
+        }
+        
+        # Host discovery
+        hosts = self._discover_hosts(target)
+        results['host_discovery'] = hosts
+        
+        # Port scanning for each discovered host
+        for host in hosts:
+            self.logger.info(f"Scanning ports on {host}")
+            open_ports = self._port_scan(host)
+            results['port_scan'][host] = open_ports
+            
+            # Service enumeration
+            services = self._enumerate_services(host, open_ports)
+            results['service_enumeration'][host] = services
+            
+            # SMB enumeration if port 445 is open
+            if 445 in open_ports:
+                smb_info = self._enumerate_smb(host)
+                results['smb_enumeration'][host] = smb_info
+            
+            # LDAP enumeration if port 389 is open
+            if 389 in open_ports:
+                ldap_info = self._enumerate_ldap(host)
+                results['ldap_enumeration'][host] = ldap_info
+        
+        return results
+    
+    def _discover_hosts(self, target):
+        """Discover live hosts in the target range"""
+        hosts = []
+        
+        if '/' in target:  # CIDR notation
+            # Simple ping sweep implementation
+            import ipaddress
+            network = ipaddress.IPv4Network(target, strict=False)
+            
+            def ping_host(ip):
+                try:
+                    result = subprocess.run(['ping', '-n', '1', '-w', '1000', str(ip)], 
+                                          capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0:
+                        return str(ip)
+                except:
+                    pass
+                return None
+            
+            with ThreadPoolExecutor(max_workers=50) as executor:
+                futures = [executor.submit(ping_host, ip) for ip in network.hosts()]
+                for future in futures:
+                    result = future.result()
+                    if result:
+                        hosts.append(result)
+        else:
+            # Single host
+            hosts = [target]
+        
+        self.logger.info(f"Discovered {len(hosts)} live hosts")
+        return hosts
+    
+    def _port_scan(self, host):
+        """Scan common ports on a host"""
+        open_ports = []
+        
+        def scan_port(port):
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(1)
+                result = sock.connect_ex((host, port))
+                if result == 0:
+                    return port
+                sock.close()
+            except:
+                pass
+            return None
+        
+        with ThreadPoolExecutor(max_workers=100) as executor:
+            futures = [executor.submit(scan_port, port) for port in self.common_ports]
+            for future in futures:
+                result = future.result()
+                if result:
+                    open_ports.append(result)
+        
+        self.logger.info(f"Found {len(open_ports)} open ports on {host}")
+        return sorted(open_ports)
+    
+    def _enumerate_services(self, host, ports):
+        """Enumerate services on open ports"""
+        services = {}
+        
+        for port in ports:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(3)
+                sock.connect((host, port))
+                
+                # Try to grab banner
+                banner = ""
+                try:
+                    sock.send(b"HEAD / HTTP/1.0\r\n\r\n")
+                    banner = sock.recv(1024).decode('utf-8', errors='ignore')
+                except:
+                    pass
+                
+                services[port] = {
+                    'service': self._identify_service(port),
+                    'banner': banner.strip()
+                }
+                sock.close()
+            except:
+                services[port] = {
+                    'service': self._identify_service(port),
+                    'banner': ''
+                }
+        
+        return services
+    
+    def _identify_service(self, port):
+        """Identify service based on port number"""
+        service_map = {
+            21: 'FTP', 22: 'SSH', 23: 'Telnet', 25: 'SMTP', 53: 'DNS',
+            80: 'HTTP', 110: 'POP3', 135: 'RPC', 139: 'NetBIOS', 143: 'IMAP',
+            443: 'HTTPS', 445: 'SMB', 993: 'IMAPS', 995: 'POP3S',
+            1723: 'PPTP', 3306: 'MySQL', 3389: 'RDP', 5432: 'PostgreSQL',
+            5900: 'VNC', 8080: 'HTTP-Alt'
+        }
+        return service_map.get(port, 'Unknown')
+    
+    def _enumerate_smb(self, host):
+        """Enumerate SMB shares and information"""
+        smb_info = {
+            'shares': [],
+            'os_info': '',
+            'domain_info': ''
+        }
+        
+        try:
+            # Use smbclient equivalent or custom SMB enumeration
+            # This is a simplified version - in practice, you'd use libraries like impacket
+            result = subprocess.run(['net', 'view', f'\\\\{host}'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                # Parse shares from output
+                lines = result.stdout.split('\n')
+                for line in lines:
+                    if 'Disk' in line or 'Print' in line:
+                        share_name = line.split()[0]
+                        smb_info['shares'].append(share_name)
+        except:
+            pass
+        
+        return smb_info
+    
+    def _enumerate_ldap(self, host):
+        """Enumerate LDAP information"""
+        ldap_info = {
+            'base_dn': '',
+            'naming_contexts': [],
+            'domain_info': ''
+        }
+        
+        # LDAP enumeration would be implemented here
+        # This is a placeholder for actual LDAP queries
+        
+        return ldap_info
