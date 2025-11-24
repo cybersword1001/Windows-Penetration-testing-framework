@@ -20,6 +20,47 @@ A production-ready web application presenting a safe, simulated environment for 
 - `/python-tool`: The legacy Python CLI tool (preserved from previous version).
 - `/public`: Static assets (simulated downloads, media).
 
+## 🐉 Kali Linux / Parrot OS Guide (Git Clone)
+
+If you just cloned this repo on Kali or Parrot, follow these exact steps to get everything running.
+
+### 1. Setup & Dependencies
+Run this first to install Node.js (for the web app) and Nmap (for the scanner).
+
+\`\`\`bash
+# Update system
+sudo apt update
+
+# Install Node.js and Nmap
+sudo apt install -y nodejs npm nmap python3-pip
+\`\`\`
+
+### 2. Run the Web Interface (The Dashboard)
+This launches the visual dashboard you see in the preview.
+
+\`\`\`bash
+# Install web dependencies
+npm install
+
+# Start the web server
+npm run dev
+\`\`\`
+*Open the link shown (usually `http://localhost:5173`) in Firefox.*
+
+### 3. Run the Python Tool (The Scanner)
+Open a **new terminal window** (Ctrl+Shift+T) for this. This runs the actual scanning engine.
+
+\`\`\`bash
+# Go to the tool folder
+cd python-tool
+
+# Install Python requirements
+pip install -r requirements.txt
+
+# Run a test scan (use sudo for best results)
+sudo python3 main.py -t 127.0.0.1 --scan-only -v
+\`\`\`
+
 ## Quick Start (Web App)
 
 This runs the visual landing page and demo interface.
