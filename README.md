@@ -12,7 +12,7 @@ A comprehensive, modular penetration testing framework designed for **authorized
 
 ### 📥 Installation (3 steps)
 
-```bash
+\`\`\`bash
 # 1) Install system dependencies (Debian / Kali)
 sudo apt update && sudo apt install -y python3 python3-pip nmap samba-client
 
@@ -24,7 +24,7 @@ cd windows-penetration-testing-tool
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
-```
+\`\`\`
 
 > **Important:** On Kali/Debian you may see PEP 668 warnings. Use a virtual environment (`venv`) or run `pip install --break-system-packages -r requirements.txt` only if you understand the risks.
 
@@ -32,7 +32,7 @@ pip3 install -r requirements.txt
 
 ## ▶️ Run the Tool
 
-```bash
+\`\`\`bash
 # Show banner + help
 python3 main.py --help
 
@@ -41,7 +41,7 @@ python3 main.py -t 192.168.1.1 --scan-only -v
 
 # Full assessment with simulated exploits (safe-mode)
 python3 main.py -t 192.168.1.100 --exploit --post-exploit -v -o my_assessment
-```
+\`\`\`
 
 ---
 
@@ -61,40 +61,40 @@ python3 main.py -t 192.168.1.100 --exploit --post-exploit -v -o my_assessment
 ## 📘 Usage Examples
 
 ### 1) Scan only (safe)
-```bash
+\`\`\`bash
 python3 main.py -t 192.168.1.100 --scan-only -v
-```
+\`\`\`
 
 **Sample output**
-```
+\`\`\`
 [+] Scanning target: 192.168.1.100
 [+] Found 5 open ports
 [+] Services: SMB, RDP, HTTP
 [+] Report saved to: reports/pentest_report_2025-11-26_104103.html
-```
+\`\`\`
 
 ### 2) Full assessment (scan + simulated exploit)
-```bash
+\`\`\`bash
 python3 main.py -t 192.168.1.100 --exploit --post-exploit -v -o my_assessment
-```
+\`\`\`
 
 ### 3) Network range scan
-```bash
+\`\`\`bash
 python3 main.py -t 192.168.1.0/24 --scan-only -v
-```
+\`\`\`
 
 ### 4) Version check
-```bash
+\`\`\`bash
 python3 main.py --version
 # Output: VulnScan Pentest Pro v0
-```
+\`\`\`
 
 ---
 
 ## ⚙️ Configuration
 
 ### Default config — `config/default.json`
-```json
+\`\`\`json
 {
   "scanning": {
     "timeout": 3,
@@ -110,20 +110,20 @@ python3 main.py --version
     "detailed_logs": true
   }
 }
-```
+\`\`\`
 
 **Use a custom config**
-```bash
+\`\`\`bash
 cp config/default.json config/custom.json
 # edit config/custom.json
 python3 main.py -t 192.168.1.100 -c config/custom.json
-```
+\`\`\`
 
 ---
 
 ## 📂 Project Structure
 
-```
+\`\`\`
 windows-penetration-testing-tool/
 ├── main.py                 # Entry point (banner + CLI)
 ├── version.py              # Version metadata
@@ -148,7 +148,7 @@ windows-penetration-testing-tool/
 │   └── example_run.txt
 └── .github/workflows/
     └── basic-check.yml
-```
+\`\`\`
 
 ---
 
@@ -159,9 +159,9 @@ Contributions are welcome!
 **How to contribute**
 1. Open an issue describing the bug or feature.  
 2. Fork the repo and create a branch:
-```bash
+\`\`\`bash
 git checkout -b feature/my-feature
-```
+\`\`\`
 3. Make changes following PEP 8.  
 4. Run `python3 test_installation.py` (if present).  
 5. Commit & push, then open a PR.
@@ -208,33 +208,33 @@ This tool is intended **ONLY** for authorized penetration testing, education, an
 ## 🛠 Troubleshooting
 
 - **pip / modules errors**
-```bash
+\`\`\`bash
 source venv/bin/activate
 pip3 install --upgrade -r requirements.txt
-```
+\`\`\`
 
 - **Permission denied**
-```bash
+\`\`\`bash
 chmod +x main.py
 sudo chown -R $USER:$USER .
-```
+\`\`\`
 
 - **Nmap missing**
-```bash
+\`\`\`bash
 sudo apt install nmap
-```
+\`\`\`
 
 - **No hosts found**
-```bash
+\`\`\`bash
 python3 main.py -t 127.0.0.1 --scan-only -v
-```
+\`\`\`
 
 - **Line endings warning (LF/CRLF)**
-```bash
+\`\`\`bash
 git config core.autocrlf false
 git add --renormalize .
 git commit -m "fix: normalize line endings"
-```
+\`\`\`
 
 ---
 
