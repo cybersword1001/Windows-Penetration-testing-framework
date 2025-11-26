@@ -1,86 +1,100 @@
-# VulnScan Pentest Pro
+# 🚀 VulnScan Pentest Pro
 
-[![Python 3.7+](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.7+](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)  
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)  
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#)
 
-A comprehensive, modular penetration testing framework designed specifically for **authorized Windows security testing** and educational purposes.
+A comprehensive, modular penetration testing framework designed for **authorized Windows security assessments**, cybersecurity research, and education.
 
-## Quick Start
+---
 
-### Installation (3 steps)
+## ⚡ Quick Start
 
-\`\`\`bash
-# 1. Install system dependencies
+### 📥 Installation (3 steps)
+
+```bash
+# 1) Install system dependencies (Debian / Kali)
 sudo apt update && sudo apt install -y python3 python3-pip nmap samba-client
 
-# 2. Clone and navigate
+# 2) Clone repository
 git clone https://github.com/cybersword1001/windows-penetration-testing-tool.git
 cd windows-penetration-testing-tool
 
-# 3. Install Python dependencies
+# 3) Create venv (recommended) and install Python deps
+python3 -m venv venv
+source venv/bin/activate
 pip3 install -r requirements.txt
-\`\`\`
+```
 
-### Run the Tool
+> **Important:** On Kali/Debian you may see PEP 668 warnings. Use a virtual environment (`venv`) or run `pip install --break-system-packages -r requirements.txt` only if you understand the risks.
 
-\`\`\`bash
-# Display banner and start tool
+---
+
+## ▶️ Run the Tool
+
+```bash
+# Show banner + help
 python3 main.py --help
 
-# Run a basic network scan
+# Scan a single host (safe, no exploitation)
 python3 main.py -t 192.168.1.1 --scan-only -v
 
-# Full assessment with simulated exploitation
-python3 main.py -t 192.168.1.100 --exploit --post-exploit -v
-\`\`\`
+# Full assessment with simulated exploits (safe-mode)
+python3 main.py -t 192.168.1.100 --exploit --post-exploit -v -o my_assessment
+```
 
-## Features
+---
 
-- **Automated Reconnaissance**: Network scanning, host discovery, and service enumeration
-- **Vulnerability Detection**: Identifies common Windows flaws (EternalBlue, SMBv1, weak configs)
-- **Exploitation Framework**: Modular exploit system (simulation mode for safety)
-- **Post-Exploitation**: Privilege escalation, lateral movement, and persistence checks
-- **Comprehensive Reporting**: HTML, JSON, and Markdown format reports
-- **Modular Architecture**: Easy to extend with custom modules
-- **Professional Startup Banner**: Displays system info and module status on launch
+## 🛡️ Features
 
-## Usage Examples
+- 🔎 **Automated Reconnaissance** — host discovery, port & service enumeration  
+- ⚠️ **Vulnerability Detection** — SMB checks, common Windows CVEs, weak configs  
+- 💥 **Exploit Simulation** — safe-mode exploit flows for learning and demos  
+- 🔐 **Post-Exploitation Checks** — privilege escalation, persistence checks  
+- 📄 **Multi-format Reporting** — HTML (interactive), PDF, DOCX, JSON, Markdown  
+- 📊 **Charts & Risk Scoring** — graphs for open ports and CVSS-like scoring  
+- 🧩 **Modular Architecture** — easy to add new modules / scanners  
+- 🎨 **Professional Startup Banner** — shows version, host, modules loaded
 
-### Example 1: Scan Only (No Exploitation)
-\`\`\`bash
+---
+
+## 📘 Usage Examples
+
+### 1) Scan only (safe)
+```bash
 python3 main.py -t 192.168.1.100 --scan-only -v
-\`\`\`
-**Output:**
-\`\`\`
+```
+
+**Sample output**
+```
 [+] Scanning target: 192.168.1.100
 [+] Found 5 open ports
-[+] Identified services: SMB, RDP, HTTP
-[+] Report saved to: reports/pentest_report_*.html
-\`\`\`
+[+] Services: SMB, RDP, HTTP
+[+] Report saved to: reports/pentest_report_2025-11-26_104103.html
+```
 
-### Example 2: Full Assessment (With Simulated Exploits)
-\`\`\`bash
+### 2) Full assessment (scan + simulated exploit)
+```bash
 python3 main.py -t 192.168.1.100 --exploit --post-exploit -v -o my_assessment
-\`\`\`
+```
 
-### Example 3: Network Range Assessment
-\`\`\`bash
+### 3) Network range scan
+```bash
 python3 main.py -t 192.168.1.0/24 --scan-only -v
-\`\`\`
+```
 
-### Example 4: Check Version
-\`\`\`bash
+### 4) Version check
+```bash
 python3 main.py --version
 # Output: VulnScan Pentest Pro v0
-\`\`\`
+```
 
-## Configuration
+---
 
-### Default Configuration File
-Located at `config/default.json`:
+## ⚙️ Configuration
 
-\`\`\`json
+### Default config — `config/default.json`
+```json
 {
   "scanning": {
     "timeout": 3,
@@ -92,120 +106,150 @@ Located at `config/default.json`:
     "safe_mode": true
   },
   "reporting": {
-    "formats": ["html", "json", "markdown"],
+    "formats": ["html", "pdf", "docx", "json", "markdown"],
     "detailed_logs": true
   }
 }
-\`\`\`
+```
 
-### Using Custom Configuration
-\`\`\`bash
+**Use a custom config**
+```bash
 cp config/default.json config/custom.json
-# Edit config/custom.json
+# edit config/custom.json
 python3 main.py -t 192.168.1.100 -c config/custom.json
-\`\`\`
+```
 
-## Structure
+---
 
-\`\`\`
-windows-penetration-tool/
-├── main.py                 # Main entry point with banner and CLI
-├── version.py              # Version and metadata
+## 📂 Project Structure
+
+```
+windows-penetration-testing-tool/
+├── main.py                 # Entry point (banner + CLI)
+├── version.py              # Version metadata
 ├── requirements.txt        # Python dependencies
-├── modules/                # Core scanning and exploitation modules
-│   ├── scanner.py          # Network scanning engine
+├── modules/                # Core scanning / exploit modules
+│   ├── scanner.py
 │   ├── vulnerability_detector.py
 │   ├── exploiter.py
 │   ├── post_exploit.py
 │   └── reporter.py
 ├── utils/                  # Utility modules
-│   ├── logger.py           # Logging configuration
-│   └── config.py           # Configuration management
-├── config/                 # Configuration files
+│   ├── logger.py
+│   ├── config.py
+│   └── report_generator.py # Advanced report generator (HTML/PDF/DOCX)
+├── config/
 │   └── default.json
-├── docs/                   # Documentation
+├── reports/                # Generated reports (html, pdf, docx, json)
+├── docs/
 │   ├── quickstart.md
 │   └── usage.md
-├── examples/               # Example runs and outputs
+├── examples/
 │   └── example_run.txt
-└── .github/workflows/      # CI/CD configuration
+└── .github/workflows/
     └── basic-check.yml
-\`\`\`
+```
 
-## Contributing
+---
 
-We welcome contributions! Please follow these guidelines:
+## 🤝 Contributing
 
-1. **Report Issues**: Open a GitHub issue describing the problem
-2. **Submit PRs**: Fork the repo, create a feature branch, and submit a pull request
-3. **Code Style**: Follow PEP 8 standards
-4. **Testing**: Run `python3 test_installation.py` before submitting PR
+Contributions are welcome!
 
-Example contribution workflow:
-\`\`\`bash
-git clone https://github.com/cybersword1001/windows-penetration-testing-tool.git
+**How to contribute**
+1. Open an issue describing the bug or feature.  
+2. Fork the repo and create a branch:
+```bash
 git checkout -b feature/my-feature
-# Make your changes
-git commit -m "feat: add new feature"
-git push origin feature/my-feature
-# Open a pull request
-\`\`\`
+```
+3. Make changes following PEP 8.  
+4. Run `python3 test_installation.py` (if present).  
+5. Commit & push, then open a PR.
 
-## License
+**Commit style examples**
+- `feat: add new scanner module`
+- `fix: resolve CLI parsing bug`
+- `docs: update README and usage examples`
 
-This project is licensed under the **MIT License** - see [LICENSE](LICENSE) file for details.
+---
 
-## Author
+## 📄 License
 
-**Created by:** [CYBERSWORD1001](https://github.com/cybersword1001)
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.
 
-A security researcher passionate about penetration testing, Windows security, and open-source security tools.
+---
 
-## Legal Disclaimer
+## 👤 Author
 
-**This tool is for authorized security testing and educational purposes only.**
+**Created by:** [CYBERSWORD1001](https://github.com/cybersword1001)  
+A security researcher focused on Windows security and open-source tooling.
 
-- Unauthorized access to computer systems is illegal
-- Always obtain written permission before testing
-- Use this tool responsibly and ethically
-- The authors are not liable for misuse
+---
 
-## Safety Guidelines
+## ⚖️ Legal Disclaimer
 
-- ✅ Test on your own systems first
-- ✅ Get explicit written authorization
-- ✅ Use safe mode (default)
-- ✅ Start with `--scan-only`
-- ❌ Never scan without permission
-- ❌ Never use on production systems without authorization
+This tool is intended **ONLY** for authorized penetration testing, education, and research.
 
-## Troubleshooting
+- ⚠ Unauthorized access is illegal.  
+- ✔ Obtain written permission before testing.  
+- ❌ The author is not responsible for misuse.
 
-### Issue: "vite is not recognized" or Python module errors
-\`\`\`bash
-pip3 install -r requirements.txt --upgrade
-\`\`\`
+---
 
-### Issue: "Permission denied"
-\`\`\`bash
+## 🧯 Safety Guidelines
+
+- ✅ Test in your own lab or environment.  
+- ✅ Begin with `--scan-only`.  
+- ✅ Keep `safe_mode` enabled during tests.  
+- ❌ Do not run exploits on systems without permission.
+
+---
+
+## 🛠 Troubleshooting
+
+- **pip / modules errors**
+```bash
+source venv/bin/activate
+pip3 install --upgrade -r requirements.txt
+```
+
+- **Permission denied**
+```bash
 chmod +x main.py
 sudo chown -R $USER:$USER .
-\`\`\`
+```
 
-### Issue: Nmap not found
-\`\`\`bash
+- **Nmap missing**
+```bash
 sudo apt install nmap
-\`\`\`
+```
 
-### Issue: No hosts discovered
-\`\`\`bash
-# Test with localhost first
+- **No hosts found**
+```bash
 python3 main.py -t 127.0.0.1 --scan-only -v
-\`\`\`
+```
 
-## Support
+- **Line endings warning (LF/CRLF)**
+```bash
+git config core.autocrlf false
+git add --renormalize .
+git commit -m "fix: normalize line endings"
+```
 
-- 📖 Read [docs/quickstart.md](docs/quickstart.md) for quick help
-- 📖 Read [docs/usage.md](docs/usage.md) for detailed usage
-- 🐛 Open a GitHub issue for bugs
-- 💬 Check discussions for general questions
+---
+
+## 💬 Support
+
+- 📘 Quick help → `docs/quickstart.md`  
+- 📙 Detailed guide → `docs/usage.md`  
+- 🐞 Bugs → Open a GitHub issue  
+- 💬 Questions → Use GitHub Discussions
+
+---
+
+If you want, I can:
+- generate `README.md` as a file and push it for you,  
+- create `docs/quickstart.md` and `docs/usage.md` content, or  
+- produce a demo GIF or screenshot for the README.
+
+Tell me which one I should do next.
