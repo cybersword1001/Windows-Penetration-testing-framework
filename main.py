@@ -80,6 +80,7 @@ try:
     from modules.exploiter import ExploitManager
     from modules.post_exploit import PostExploitManager
     from modules.reporter import ReportGenerator
+    from utils.report_generator import generate_reports
     from utils.logger import setup_logger
     from utils.config import Config
 except ImportError as e:
@@ -149,7 +150,9 @@ def main():
         vuln_detector = VulnerabilityDetector(config)
         exploit_manager = ExploitManager(config)
         post_exploit_manager = PostExploitManager(config)
-        reporter = ReportGenerator(args.output)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_basename = f"pentest_report_{timestamp}"
         
         results = {
             'target': args.target,
@@ -165,9 +168,12 @@ def main():
         results['scan_results'] = scan_results
         
         if args.scan_only:
-            logger.info("Scan-only mode. Generating report...")
-            reporter.generate_report(results)
+            logger.info("Scan-only mode. Generating advanced reports...")
+            findings = _convert_to_findings(scan_results)
+            report_files = generate_reports(findings, f"{args.output}/{report_basename}")
             print(f"\n✅ Scan completed! Reports saved in: {args.output}/")
+            for format_type, file_path in report_files.items():
+                print(f"   {format_type.upper()}: {file_path}")
             print("Thanks for using VulnScan Pentest Pro. Stay ethical!\n")
             return
         
@@ -188,9 +194,9 @@ def main():
                 post_results = post_exploit_manager.run_post_exploit(exploit_results)
                 results['post_exploit'] = post_results
         
-        # Generate comprehensive report
-        logger.info("Generating final report...")
-        report_files = reporter.generate_report(results)
+        logger.info("Generating advanced reports with risk analysis...")
+        findings = _convert_vulnerabilities_to_findings(vulnerabilities)
+        report_files = generate_reports(findings, f"{args.output}/{report_basename}")
         
         print(f"\n✅ Assessment completed successfully!")
         print(f"📊 Reports generated:")
@@ -208,6 +214,40 @@ def main():
             import traceback
             traceback.print_exc()
         sys.exit(1)
+
+def _convert_to_findings(scan_results):
+    """Convert scan results to findings format for report generator"""
+    findings = []
+    for result in scan_results:
+        finding = {
+            'host': result.get('host', 'Unknown'),
+            'port': result.get('port', 'N/A'),
+            'service': result.get('service', 'Unknown'),
+            'severity': result.get('severity', 'info'),
+            'vulnerability': result.get('vulnerability', 'Unknown'),
+            'note': result.get('description', 'No description'),
+            'exploitability': result.get('exploitability', 0.5),
+            'impact': result.get('impact', 0.5)
+        }
+        findings.append(finding)
+    return findings
+
+def _convert_vulnerabilities_to_findings(vulnerabilities):
+    """Convert vulnerability data to findings format for report generator"""
+    findings = []
+    for vuln in vulnerabilities:
+        finding = {
+            'host': vuln.get('host', 'Unknown'),
+            'port': vuln.get('port', 'N/A'),
+            'service': vuln.get('service', 'Unknown'),
+            'severity': vuln.get('severity', 'info'),
+            'vulnerability': vuln.get('vulnerability', 'Unknown'),
+            'note': vuln.get('description', 'No description'),
+            'exploitability': vuln.get('exploitability', 0.5),
+            'impact': vuln.get('impact', 0.5)
+        }
+        findings.append(finding)
+    return findings
 
 if __name__ == "__main__":
     main()
