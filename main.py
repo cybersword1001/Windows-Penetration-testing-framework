@@ -4,14 +4,75 @@ Windows Penetration Testing Tool
 A modular framework for authorized Windows security testing
 """
 
+# ========================= BANNER SECTION =========================
+import os
+import platform
+from datetime import datetime
+
+try:
+    from pyfiglet import figlet_format
+    from colorama import init as colorama_init, Fore, Style
+    colorama_init(autoreset=True)
+except ImportError:
+    def figlet_format(t, font="standard"):
+        return t
+    class Fore:
+        CYAN = ""
+        GREEN = ""
+        YELLOW = ""
+        MAGENTA = ""
+        RED = ""
+        RESET = ""
+    class Style:
+        RESET_ALL = ""
+
+def count_files(path):
+    """Count total files in a directory recursively"""
+    total = 0
+    if os.path.exists(path):
+        for _, _, files in os.walk(path):
+            total += len(files)
+    return total
+
+def show_banner():
+    """Display a professional startup banner with system info"""
+    title = figlet_format("VulnScan Pentest Pro", font="slant")
+    mascot = r"""
+        ▄████▄   ██▀███   ▄▄▄       ███▄    █ 
+       ▒██▀ ▀█  ▓██ ▒ ██▒▒████▄     ██ ▀█   █ 
+       ▒▓█    ▄ ▓██ ░▄█ ▒▒██  ▀█▄  ▓██  ▀█ ██▒
+       ▒▓▓▄ ▄██▒▒██▀▀█▄  ░██▄▄▄▄██ ▓██▒  ▐▌██▒
+       ▒ ▓███▀ ░░██▓ ▒██▒ ▓█   ▓██▒▒██░   ▓██░
+       ░ ░▒ ▒  ░░ ▒▓ ░▒▓░ ▒▒   ▓▒█░░ ▒░   ▒ ▒ 
+         ░  ▒     ░▒ ░ ▒░  ▒   ▒▒ ░░ ░░   ░ ▒░
+       ░          ░░   ░   ░   ▒      ░   ░ ░ 
+       ░ ░         ░           ░  ░         ░ 
+       ░
+    """
+    modules = count_files("modules")
+    utils = count_files("utils")
+    configs = count_files("config")
+    print(Fore.RED + title + Style.RESET_ALL)
+    print(mascot)
+    print("=" * 75)
+    print(f"{Fore.CYAN}[+] Version: v0  |  Host: {platform.node()}  |  Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}[+] Modules Loaded: {modules}   |   Utils: {utils}   |   Configs: {configs}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}[+] Features: Recon  |  Scanning  |  Vulnerability Detection  |  Reporting{Style.RESET_ALL}")
+    print(f"{Fore.MAGENTA}[+] Created by: CYBERSWORD1001{Style.RESET_ALL}")
+    print("=" * 75)
+    print()
+
+# ========================= END BANNER SECTION =========================
+
 import argparse
 import sys
 import json
-import os
 from pathlib import Path
 
 # Add the current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from version import __version__, __author__
 
 try:
     from modules.scanner import NetworkScanner
@@ -26,43 +87,47 @@ except ImportError as e:
     print("Please make sure all required files are present and run: pip3 install -r requirements.txt")
     sys.exit(1)
 
-def banner():
-    print("""
-╔══════════════════════════════════════════════════════════════╗
-║                Windows PenTest Tool v1.0                    ║
-║              For Authorized Testing Only                     ║
-╚══════════════════════════════════════════════════════════════╝
-    """)
-
 def check_requirements():
-    """Check if basic requirements are met"""
+    """Check if basic Python requirements are met"""
     try:
         import socket
         import subprocess
         import threading
         import concurrent.futures
-        print("✅ Basic Python modules available")
         return True
     except ImportError as e:
         print(f"❌ Missing required Python module: {e}")
         return False
 
 def main():
-    banner()
+    """Main entry point for the penetration testing tool"""
+    show_banner()
     
     # Check basic requirements
     if not check_requirements():
         print("Please install missing dependencies and try again.")
         sys.exit(1)
     
-    parser = argparse.ArgumentParser(description='Windows Penetration Testing Tool')
-    parser.add_argument('-t', '--target', required=True, help='Target IP or range (e.g., 192.168.1.1 or 192.168.1.0/24)')
-    parser.add_argument('-c', '--config', default='config/default.json', help='Configuration file')
-    parser.add_argument('-o', '--output', default='reports', help='Output directory for reports')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
-    parser.add_argument('--scan-only', action='store_true', help='Perform scanning only')
-    parser.add_argument('--exploit', action='store_true', help='Enable exploitation modules')
-    parser.add_argument('--post-exploit', action='store_true', help='Enable post-exploitation modules')
+    parser = argparse.ArgumentParser(
+        description='Windows Penetration Testing Tool - Authorized testing only',
+        epilog='Example: python3 main.py -t 192.168.1.100 --scan-only -v'
+    )
+    parser.add_argument('-t', '--target', required=True,
+                        help='Target IP or range (e.g., 192.168.1.1 or 192.168.1.0/24)')
+    parser.add_argument('-c', '--config', default='config/default.json',
+                        help='Configuration file (default: config/default.json)')
+    parser.add_argument('-o', '--output', default='reports',
+                        help='Output directory for reports (default: reports)')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Enable verbose output')
+    parser.add_argument('--scan-only', action='store_true',
+                        help='Perform network scanning only')
+    parser.add_argument('--exploit', action='store_true',
+                        help='Enable exploitation modules (simulation mode)')
+    parser.add_argument('--post-exploit', action='store_true',
+                        help='Enable post-exploitation modules')
+    parser.add_argument('--version', action='version',
+                        version=f'%(prog)s {__version__}')
     
     args = parser.parse_args()
     
@@ -103,6 +168,7 @@ def main():
             logger.info("Scan-only mode. Generating report...")
             reporter.generate_report(results)
             print(f"\n✅ Scan completed! Reports saved in: {args.output}/")
+            print("Thanks for using VulnScan Pentest Pro. Stay ethical!\n")
             return
         
         # Phase 2: Vulnerability Detection
@@ -130,6 +196,8 @@ def main():
         print(f"📊 Reports generated:")
         for format_type, file_path in report_files.items():
             print(f"   {format_type.upper()}: {file_path}")
+        
+        print("\nThanks for using VulnScan Pentest Pro. Stay ethical!\n")
         
     except KeyboardInterrupt:
         print("\n⚠️  Operation interrupted by user")

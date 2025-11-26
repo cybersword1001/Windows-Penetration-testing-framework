@@ -1,8 +1,10 @@
 # Core dependencies - minimal for basic functionality
+pyfiglet>=0.7.2
+colorama>=0.4.4
 requests>=2.25.0
 python-nmap>=0.7.1
 
-# Optional dependencies (install if available)
+# Optional security analysis dependencies
 # impacket>=0.10.0
 # scapy>=2.4.5
 # netaddr>=0.8.0

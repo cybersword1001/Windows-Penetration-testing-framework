@@ -1,0 +1,32 @@
+# Example: Basic Network Scan
+
+## Command:
+python3 main.py -t 192.168.1.100 --scan-only -v
+
+## Expected Output:
+
+╔══════════════════════════════════════════════════════════════╗
+║                Windows PenTest Tool v1.0                    ║
+║              For Authorized Testing Only                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+2024-01-15 10:30:15 - Starting reconnaissance on target: 192.168.1.100
+2024-01-15 10:30:16 - Discovered 1 live host
+2024-01-15 10:30:16 - Starting port scan on 192.168.1.100
+2024-01-15 10:30:20 - Found 5 open ports
+2024-01-15 10:30:21 - Port 22 (SSH): OpenSSH 7.4
+2024-01-15 10:30:22 - Port 80 (HTTP): Apache 2.4.6
+2024-01-15 10:30:23 - Port 443 (HTTPS): Apache 2.4.6
+2024-01-15 10:30:24 - Port 3306 (MySQL): MySQL 5.7
+2024-01-15 10:30:25 - Port 3389 (RDP): Windows Terminal Service
+2024-01-15 10:30:26 - Scan completed successfully
+2024-01-15 10:30:27 - Generating report...
+
+✅ Scan completed! Reports saved in: reports/
+
+Reports Generated:
+- HTML Report: reports/pentest_report_20240115_103025.html
+- JSON Report: reports/pentest_report_20240115_103025.json
+- Markdown Report: reports/pentest_report_20240115_103025.md
+
+Thanks for using VulnScan Pentest Pro. Stay ethical!
