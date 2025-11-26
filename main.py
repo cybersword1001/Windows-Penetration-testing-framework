@@ -218,18 +218,33 @@ def main():
 def _convert_to_findings(scan_results):
     """Convert scan results to findings format for report generator"""
     findings = []
-    for result in scan_results:
-        finding = {
-            'host': result.get('host', 'Unknown'),
-            'port': result.get('port', 'N/A'),
-            'service': result.get('service', 'Unknown'),
-            'severity': result.get('severity', 'info'),
-            'vulnerability': result.get('vulnerability', 'Unknown'),
-            'note': result.get('description', 'No description'),
-            'exploitability': result.get('exploitability', 0.5),
-            'impact': result.get('impact', 0.5)
-        }
-        findings.append(finding)
+    
+    # scan_results is a dict with keys: host_discovery, port_scan, service_enumeration, etc.
+    try:
+        port_scan = scan_results.get('port_scan', {})
+        service_enum = scan_results.get('service_enumeration', {})
+        
+        # Iterate through each host and its ports
+        for host, ports in port_scan.items():
+            services = service_enum.get(host, {})
+            
+            # Create a finding for each open port
+            for port in ports:
+                service_info = services.get(port, {})
+                finding = {
+                    'host': host,
+                    'port': port,
+                    'service': service_info.get('service', 'Unknown'),
+                    'severity': 'info',  # Default severity for discovered services
+                    'vulnerability': f'Open {service_info.get("service", "Unknown")} Port',
+                    'note': service_info.get('banner', 'Service detected'),
+                    'exploitability': 0.3,
+                    'impact': 0.3
+                }
+                findings.append(finding)
+    except Exception as e:
+        print(f"Warning: Error converting scan results: {e}")
+    
     return findings
 
 def _convert_vulnerabilities_to_findings(vulnerabilities):
